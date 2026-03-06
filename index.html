@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SecureGuard – Cybersecurity Dashboard</title>
+    <meta name="description"
+        content="AI-powered phishing detection system for URLs and emails. Real-time threat analysis dashboard." />
+    <link rel="stylesheet" href="style.css" />
+    <!-- jsQR – QR code decoder -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Socket.IO for real-time alerts -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+
+    <!-- ======= SIDEBAR ======= -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L3 7V12C3 16.97 6.93 21.32 12 22C17.07 21.32 21 16.97 21 12V7L12 2Z"
+                        fill="url(#shieldGrad)" />
+                    <path d="M9 12L11 14L15 10" stroke="#fff" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <defs>
+                        <linearGradient id="shieldGrad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#00d4ff" />
+                            <stop offset="1" stop-color="#7c3aed" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="logo-text">Secure<span class="logo-ai">Guard</span></span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" id="nav-dashboard" onclick="showSection('dashboard', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                </svg>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item" id="nav-url" onclick="showSection('url-scanner', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" />
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                URL Scanner
+            </a>
+            <a href="#" class="nav-item" id="nav-email" onclick="showSection('email-scanner', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2" />
+                    <path d="M2 8L12 13L22 8" stroke="currentColor" stroke-width="2" />
+                </svg>
+                Email Scanner
+            </a>
+            <a href="#" class="nav-item" id="nav-gmail" onclick="showSection('gmail-scan', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                        stroke="currentColor" stroke-width="2" />
+                    <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" />
+                </svg>
+                Gmail Scan
+            </a>
+            <a href="#" class="nav-item" id="nav-qr-scanner" onclick="showSection('qr-scanner', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    <rect x="15" y="15" width="2" height="2" fill="currentColor" />
+                    <rect x="19" y="15" width="2" height="2" fill="currentColor" />
+                    <rect x="15" y="19" width="2" height="2" fill="currentColor" />
+                    <rect x="19" y="19" width="2" height="2" fill="currentColor" />
+                </svg>
+                QR Scanner
+            </a>
+            <a href="#" class="nav-item" id="nav-trainer" onclick="showSection('trainer', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2"
+                        stroke-linejoin="round" />
+                    <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Phish Trainer
+            </a>
+        </nav>
+
+        <div class="sidebar-status">
+            <div class="status-dot pulse"></div>
+            <span>System Active</span>
+        </div>
+    </aside>
+
+    <!-- Hamburger -->
+    <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+
+    <!-- ======= PHISHING ALERT BANNER ======= -->
+    <div id="alertBanner" class="alert-banner" style="display:none">
+        <span id="alertIcon">⚠️</span>
+        <span id="alertText">Phishing detected!</span>
+        <button onclick="dismissAlert()" class="alert-close">✕</button>
+    </div>
+
+
+    <!-- ======= MAIN CONTENT ======= -->
+    <main class="main-content" id="mainContent">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title" id="pageTitle">Dashboard Overview</h1>
+                <span class="page-subtitle" id="pageSubtitle">Real-time threat monitoring</span>
+            </div>
+            <div class="topbar-right">
+                <div class="threat-level" id="threatLevel">
+                    <div class="threat-dot medium"></div>
+                    <span>Threat Level: <strong>Medium</strong></span>
+                </div>
+                <div class="live-time" id="liveTime"></div>
+            </div>
+        </header>
+
+        <!-- ============ DASHBOARD SECTION ============ -->
+        <section class="section active" id="section-dashboard">
+
+            <!-- Stat Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon safe-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53446 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Safe Detections</span>
+                        <span class="stat-value" id="statSafe">0</span>
+                        <span class="stat-trend up">▲ 12% this week</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon danger-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M10.29 3.86L1.82 18A2 2 0 0 0 3.54 21H20.46A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Phishing Detected</span>
+                        <span class="stat-value" id="statPhishing">0</span>
+                        <span class="stat-trend down">▲ 34% this week</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon info-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                            <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Scanned</span>
+                        <span class="stat-value" id="statTotal">0</span>
+                        <span class="stat-trend neutral">All time</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon warn-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Detection Rate</span>
+                        <span class="stat-value" id="statRate">0%</span>
+                        <span class="stat-trend neutral">Accuracy</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card wide">
+                    <div class="chart-header">
+                        <h3>Weekly Threat Activity</h3>
+                        <span class="chart-badge live">LIVE</span>
+                    </div>
+                    <canvas id="lineChart" height="120"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Detection Breakdown</h3>
+                    </div>
+                    <canvas id="doughnutChart" height="160"></canvas>
+                    <div class="donut-legend">
+                        <span class="legend-dot safe"></span> Safe&nbsp;&nbsp;
+                        <span class="legend-dot danger"></span> Phishing
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Scans Table -->
+            <div class="table-card">
+                <div class="chart-header">
+                    <h3>Recent Scans</h3>
+                    <button class="clear-btn" onclick="clearHistory()">Clear History</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="scanTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Type</th>
+                                <th>Content</th>
+                                <th>Risk Score</th>
+                                <th>Result</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scanTableBody">
+                            <tr class="empty-row">
+                                <td colspan="6">No scans yet — run a URL or Email scan to see results here.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ============ URL SCANNER SECTION ============ -->
+        <section class="section" id="section-url-scanner">
+            <div class="scanner-layout">
+
+                <div class="scanner-card">
+                    <div class="scanner-header">
+                        <div class="scanner-icon url-scanner-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" />
+                                <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>URL Scanner</h2>
+                            <p>Paste any URL below to analyze it for phishing indicators</p>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="urlInput">Target URL</label>
+                        <div class="input-wrap">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            <input id="urlInput" type="url" placeholder="https://example.com" autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <button class="scan-btn" id="urlScanBtn" onclick="scanURL()">
+                        <span class="btn-text">🔍 Analyze URL</span>
+                        <span class="btn-loader" style="display:none">Scanning…</span>
+                    </button>
+
+                    <!-- Result Panel -->
+                    <div class="result-panel" id="urlResult" style="display:none">
+                        <div class="result-header">
+                            <div class="result-badge" id="urlBadge"></div>
+                            <span class="result-label" id="urlLabel"></span>
+                        </div>
+                        <div class="risk-row">
+                            <span>Risk Score</span>
+                            <span class="risk-pct" id="urlRiskPct">0%</span>
+                        </div>
+                        <div class="risk-bar-wrap">
+                            <div class="risk-bar-fill" id="urlRiskBar"></div>
+                        </div>
+                        <div class="indicators" id="urlIndicators"></div>
+                        <!-- Report to Google Safe Browsing -->
+                        <div id="urlReportWrap" style="display:none">
+                            <button class="report-google-btn" id="urlReportBtn" onclick="reportToGoogle()">
+                                🚩 Report to Google Safe Browsing
+                            </button>
+                            <span id="urlReportConfirm"
+                                style="display:none;margin-left:10px;font-size:0.78rem;color:#3a7ec4;">✓
+                                Reported!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ EMAIL SCANNER SECTION ============ -->
+        <section class="section" id="section-email-scanner">
+            <div class="scanner-layout">
+
+                <div class="scanner-card">
+                    <div class="scanner-header">
+                        <div class="scanner-icon email-scanner-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor"
+                                    stroke-width="2" />
+                                <path d="M2 8L12 13L22 8" stroke="currentColor" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>Email Scanner</h2>
+                            <p>Paste the full email content to detect phishing attempts</p>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="emailInput">Email Content</label>
+                        <textarea id="emailInput" rows="10"
+                            placeholder="Paste the full email body here including subject, from address, and body text..."></textarea>
+                    </div>
+
+                    <button class="scan-btn email-scan-btn" id="emailScanBtn" onclick="scanEmail()">
+                        <span class="btn-text">📧 Analyze Email</span>
+                        <span class="btn-loader" style="display:none">Scanning…</span>
+                    </button>
+
+                    <!-- Result Panel -->
+                    <div class="result-panel" id="emailResult" style="display:none">
+                        <div class="result-header">
+                            <div class="result-badge" id="emailBadge"></div>
+                            <span class="result-label" id="emailLabel"></span>
+                        </div>
+                        <div class="risk-row">
+                            <span>Risk Score</span>
+                            <span class="risk-pct" id="emailRiskPct">0%</span>
+                        </div>
+                        <div class="risk-bar-wrap">
+                            <div class="risk-bar-fill" id="emailRiskBar"></div>
+                        </div>
+                        <div class="indicators" id="emailIndicators"></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============ GMAIL SCAN SECTION ============ -->
+        <section class="section" id="section-gmail-scan">
+            <div class="scanner-card" style="max-width:820px">
+                <div class="scanner-header">
+                    <div class="scanner-icon email-scanner-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                                stroke="currentColor" stroke-width="2" />
+                            <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Gmail Inbox Scanner</h2>
+                        <p>Connect your Google account to automatically scan your unread emails for phishing</p>
+                    </div>
+                </div>
+
+                <!-- Login status bar -->
+                <div id="gmailAuthBar" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;
+                     padding:14px 16px;border-radius:var(--radius-sm);
+                     background:rgba(125,184,240,0.08);border:1px solid rgba(125,184,240,0.25)">
+                    <div id="gmailStatusDot"
+                        style="width:10px;height:10px;border-radius:50%;background:#ccc;flex-shrink:0"></div>
+                    <span id="gmailStatusText" style="font-size:0.85rem;color:var(--text-secondary);flex:1">
+                        Checking connection…
+                    </span>
+                    <button id="gmailConnectBtn" onclick="connectGmail()" class="scan-btn"
+                        style="width:auto;padding:9px 20px;font-size:0.82rem">
+                        🔗 Connect Gmail
+                    </button>
+                    <button id="gmailDisconnectBtn" onclick="disconnectGmail()" style="display:none;
+                        background:rgba(244,143,177,0.10);border:1px solid rgba(244,143,177,0.35);
+                        color:#c0507a;padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;
+                        font-size:0.82rem;font-family:inherit">
+                        ✕ Disconnect
+                    </button>
+                </div>
+
+                <!-- Scan controls (shown after login) -->
+                <div id="gmailScanControls"
+                    style="display:none;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+                    <label style="font-size:0.85rem;color:var(--text-secondary)">Emails to fetch:</label>
+                    <select id="gmailCount"
+                        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary);padding:8px 12px;border-radius:var(--radius-sm);font-family:inherit">
+                        <option value="5">5 emails</option>
+                        <option value="10" selected>10 emails</option>
+                        <option value="20">20 emails</option>
+                    </select>
+                    <button class="scan-btn" style="width:auto;padding:10px 24px" onclick="scanGmailInbox()">
+                        📬 Scan Inbox
+                    </button>
+                </div>
+
+                <div id="gmailResults" style="margin-top:8px"></div>
+            </div>
+        </section>
+
+        <!-- ============ QR SCANNER SECTION ============ -->
+        <section class="section" id="section-qr-scanner">
+            <div class="scanner-layout">
+                <div class="scanner-card">
+                    <div class="scanner-header">
+                        <div class="scanner-icon url-scanner-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                                <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                                <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                                <rect x="15" y="15" width="2" height="2" fill="currentColor" />
+                                <rect x="19" y="15" width="2" height="2" fill="currentColor" />
+                                <rect x="15" y="19" width="2" height="2" fill="currentColor" />
+                                <rect x="19" y="19" width="2" height="2" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>QR Code Scanner</h2>
+                            <p>Upload a QR code image to extract and scan its URL for phishing threats</p>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Upload QR Code Image</label>
+                        <div class="qr-drop-zone" id="qrDropZone"
+                            onclick="document.getElementById('qrFileInput').click()"
+                            ondragover="event.preventDefault();this.classList.add('drag-over')"
+                            ondragleave="this.classList.remove('drag-over')" ondrop="handleQRDrop(event)">
+                            <input type="file" id="qrFileInput" accept="image/*" style="display:none"
+                                onchange="handleQRUpload(event)" />
+                            <div id="qrPreviewArea">
+                                <div class="qr-icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                                        <rect x="14" y="3" width="7" height="7" rx="1" />
+                                        <rect x="3" y="14" width="7" height="7" rx="1" />
+                                        <circle cx="17" cy="17" r="3" />
+                                    </svg>
+                                </div>
+                                <p class="qr-drop-text">Click or drag & drop a QR code image</p>
+                                <p class="qr-drop-sub">PNG, JPG, WEBP supported</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="qrExtracted" style="display:none">
+                        <div class="qr-extracted-url" id="qrExtractedUrl"></div>
+                        <button class="scan-btn" onclick="scanQRUrl()">
+                            <span>🔍 Scan Extracted URL</span>
+                        </button>
+                    </div>
+
+                    <div class="result-panel" id="qrResult" style="display:none;margin-top:20px">
+                        <div class="result-header">
+                            <div class="result-badge" id="qrBadge"></div>
+                            <span class="result-label" id="qrLabel"></span>
+                        </div>
+                        <div class="risk-row">
+                            <span>Risk Score</span>
+                            <span class="risk-pct" id="qrRiskPct">0%</span>
+                        </div>
+                        <div class="risk-bar-wrap">
+                            <div class="risk-bar-fill" id="qrRiskBar"></div>
+                        </div>
+                        <div class="indicators" id="qrIndicators"></div>
+                    </div>
+                </div>
+
+                <div class="tips-card">
+                    <h3>💡 How QR Scanning Works</h3>
+                    <ul>
+                        <li>Upload any QR code image from your device</li>
+                        <li>The QR is decoded client-side using jsQR</li>
+                        <li>Extracted URL is sent to the AI phishing scanner</li>
+                        <li>You get a full risk breakdown just like the URL Scanner</li>
+                        <li>Useful for checking QR codes in emails, flyers, or social media</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ PHISHING TRAINER SECTION ============ -->
+        <section class="section" id="section-trainer">
+            <div class="trainer-card">
+                <div class="scanner-header" style="margin-bottom:24px">
+                    <div class="scanner-icon email-scanner-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2"
+                                stroke-linejoin="round" />
+                            <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Phishing Simulation Trainer</h2>
+                        <p>Can you spot the phishing email? Test your instincts across 10 real-world examples.</p>
+                    </div>
+                </div>
+
+                <!-- Quiz UI -->
+                <div id="trainerQuiz">
+                    <div class="trainer-progress">
+                        <div class="trainer-progress-bar">
+                            <div class="trainer-progress-fill" id="trainerProgressFill" style="width:0%"></div>
+                        </div>
+                        <span class="trainer-score-badge" id="trainerScoreBadge">0 / 10</span>
+                    </div>
+
+                    <div class="trainer-email-card">
+                        <div class="trainer-email-meta" id="trainerMeta"></div>
+                        <div id="trainerBody"></div>
+                    </div>
+
+                    <div class="trainer-feedback" id="trainerFeedback"></div>
+
+                    <div class="trainer-buttons" id="trainerButtons">
+                        <button class="trainer-btn phish-btn" onclick="trainerGuess('phishing')">⚠️ Phishing</button>
+                        <button class="trainer-btn safe-btn" onclick="trainerGuess('safe')">✅ Safe</button>
+                    </div>
+
+                    <button id="trainerNextBtn" onclick="trainerNext()" style="display:none" class="scan-btn"
+                        style="margin-top:8px">Next →</button>
+                </div>
+
+                <!-- Result screen -->
+                <div id="trainerResult" style="display:none" class="trainer-result">
+                    <div class="trainer-score-big" id="trainerFinalScore">0/10</div>
+                    <div class="trainer-grade" id="trainerGrade"></div>
+                    <p style="color:var(--text-muted);font-size:0.85rem" id="trainerGradeMsg"></p>
+                    <button class="trainer-retry-btn" onclick="startTrainer()">🔄 Try Again</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ======= LIVE FEED TICKER ======= -->
+    <div class="live-ticker" id="liveTicker">
+        <span class="ticker-label">LIVE FEED</span>
+        <div class="ticker-wrap">
+            <div class="ticker-inner" id="tickerInner"></div>
+        </div>
+    </div>
+
+    <!-- ======= SCAN OVERLAY (animation) ======= -->
+    <div class="scan-overlay" id="scanOverlay">
+        <div class="scan-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring r2"></div>
+            <div class="spinner-ring r3"></div>
+            <span class="spinner-text">Analyzing…</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

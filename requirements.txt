@@ -1,0 +1,15 @@
+flask
+flask-cors
+flask-socketio
+eventlet
+gunicorn
+scikit-learn
+numpy
+joblib
+requests
+beautifulsoup4
+thefuzz
+python-Levenshtein
+google-auth
+google-auth-oauthlib
+google-api-python-client
