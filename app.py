@@ -21,22 +21,45 @@ import re
 
 from flask import Flask, request, jsonify, session, redirect, send_from_directory
 from flask_cors import CORS
-from flask_socketio import SocketIO
 import joblib
 
 from features      import extract_url_features
 from lookalike     import check_lookalike
 from form_detector import detect_login_form
-from gmail_reader  import fetch_emails
-from auth          import get_authorization_url, exchange_code_for_token, build_gmail_service_from_token
+
+# Gmail auth — graceful: missing credentials.json won't crash the app
+try:
+    from gmail_reader import fetch_emails
+    from auth import get_authorization_url, exchange_code_for_token, build_gmail_service_from_token
+    GMAIL_ENABLED = True
+except Exception:
+    GMAIL_ENABLED = False
+    def fetch_emails(*a, **kw): return []
+    def get_authorization_url(): return '#'
+    def exchange_code_for_token(code): return None
+    def build_gmail_service_from_token(token): return None
+
+# ── Detect environment ─────────────────────────────────────
+IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV') is not None
 
 # ── App setup ──────────────────────────────────────────────
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secureguard-secret-2024'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secureguard-secret-2024')
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE']   = False
+app.config['SESSION_COOKIE_SECURE']   = IS_VERCEL   # True on HTTPS (Vercel), False locally
 CORS(app, origins='*', supports_credentials=True)
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
+
+# SocketIO — only initialise when NOT on Vercel (serverless can't hold connections)
+if not IS_VERCEL:
+    from flask_socketio import SocketIO
+    socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
+else:
+    # Stub so the rest of the code can call socketio.emit() without errors
+    class _NoOpSocketIO:
+        def emit(self, *a, **kw): pass
+        def on(self, *a, **kw): return lambda f: f
+        def run(self, *a, **kw): pass
+    socketio = _NoOpSocketIO()
 
 # ── Load models ────────────────────────────────────────────
 url_model   = None
