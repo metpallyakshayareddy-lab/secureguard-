@@ -57,9 +57,14 @@ else:
     # Stub so the rest of the code can call socketio.emit() without errors
     class _NoOpSocketIO:
         def emit(self, *a, **kw): pass
-        def on(self, *a, **kw): return lambda f: f
+        def on(self, *a, **kw):
+            def decorator(f): return f
+            return decorator
         def run(self, *a, **kw): pass
     socketio = _NoOpSocketIO()
+
+# ── Base directory (absolute, works on Vercel too) ──────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── Load models ────────────────────────────────────────────
 url_model   = None
@@ -67,15 +72,16 @@ email_model = None
 
 def load_models():
     global url_model, email_model
-    for path, name in [('url_model.pkl', 'url'), ('email_model.pkl', 'email')]:
-        if os.path.exists(path):
+    for filename, name in [('url_model.pkl', 'url'), ('email_model.pkl', 'email')]:
+        full_path = os.path.join(BASE_DIR, filename)
+        if os.path.exists(full_path):
             if name == 'url':
-                url_model = joblib.load(path)
+                url_model = joblib.load(full_path)
             else:
-                email_model = joblib.load(path)
-            print(f'Loaded {path}')
+                email_model = joblib.load(full_path)
+            print(f'Loaded {filename}')
         else:
-            print(f'WARNING: {path} not found – run train.py first.')
+            print(f'WARNING: {filename} not found at {full_path}')
 
 load_models()
 
