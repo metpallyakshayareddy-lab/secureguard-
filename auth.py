@@ -12,8 +12,9 @@ import secrets
 import urllib.parse
 import requests as http_requests
 
-SCOPES       = ['https://www.googleapis.com/auth/gmail.readonly']
-REDIRECT_URI = 'http://localhost:5000/auth/callback'
+SCOPES           = ['https://www.googleapis.com/auth/gmail.readonly']
+# Set REDIRECT_URI env var on Vercel to your deployment URL + /auth/callback
+REDIRECT_URI     = os.environ.get('REDIRECT_URI', 'http://localhost:5000/auth/callback')
 GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/auth'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
@@ -21,13 +22,22 @@ _client_cache = {}
 
 
 def _load_client_info():
-    """Load client_id / client_secret from credentials.json."""
+    """Load client_id / client_secret from credentials.json or env vars."""
     if _client_cache:
         return _client_cache, None
+
+    # 1) Try environment variables first (for Vercel / production)
+    env_id     = os.environ.get('GOOGLE_CLIENT_ID')
+    env_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    if env_id and env_secret:
+        _client_cache['client_id']     = env_id
+        _client_cache['client_secret'] = env_secret
+        return _client_cache, None
+
+    # 2) Fall back to credentials.json (local dev)
     try:
         with open('credentials.json') as f:
             data = json.load(f)
-        # Support both "web" and "installed" app types
         info = data.get('web') or data.get('installed')
         if not info:
             return None, 'credentials.json has no "web" or "installed" key'
@@ -35,7 +45,7 @@ def _load_client_info():
         _client_cache['client_secret'] = info['client_secret']
         return _client_cache, None
     except FileNotFoundError:
-        return None, 'credentials.json not found in project folder'
+        return None, 'credentials.json not found — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars'
     except Exception as e:
         return None, str(e)
 
